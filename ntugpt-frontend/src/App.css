@@ -1,0 +1,22 @@
+/* Remove default create-react-app styles */
+.App {
+  text-align: inherit;
+}
+
+.App-logo {
+  display: none;
+}
+
+.App-header {
+  display: none;
+}
+
+.App-link {
+  display: none;
+}
+
+/* Ensure full height */
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
