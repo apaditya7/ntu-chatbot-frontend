@@ -17,11 +17,9 @@ const ChatBox = ({ theme }) => {
   const chatContainerRef = useRef(null);
   const textFieldRef = useRef(null);
 
-  // Function to send message to the backend and handle streaming response
   const sendMessage = async (text) => {
     if (!text.trim()) return;
 
-    // If it's the first message, add it without the initial bot message
     if (isFirstMessage) {
       setMessages([{ text, sender: "user" }]);
       setIsFirstMessage(false);
@@ -36,37 +34,80 @@ const ChatBox = ({ theme }) => {
       const botMessageId = Date.now();
       setMessages(prev => [...prev, { id: botMessageId, text: "", sender: "bot" }]);
 
-      const query = encodeURIComponent(text);
-      const eventSource = new EventSource(`http://localhost:5001/chat/stream?message=${query}`, {
-        withCredentials: false
-      });
+      // Use Server-Sent Events for streaming
+      const encodedMessage = encodeURIComponent(text);
+      const eventSource = new EventSource(
+        `https://ntu-chatbot-876229082962.us-central1.run.app/chat/stream?message=${encodedMessage}`
+      );
+
+      let botResponseText = "";
 
       eventSource.onmessage = (event) => {
-        const chunk = JSON.parse(event.data);
-        
-        setMessages(prevMessages => {
-          const updatedMessages = prevMessages.map(msg => 
-            msg.id === botMessageId 
-              ? { ...msg, text: (msg.text || "") + chunk.text } 
-              : msg
-          );
+        try {
+          const data = JSON.parse(event.data);
           
-          return updatedMessages;
-        });
+          if (data.text) {
+            botResponseText += data.text;
+            
+            // Update the bot message with accumulated text
+            setMessages(prevMessages =>
+              prevMessages.map(msg =>
+                msg.id === botMessageId
+                  ? { ...msg, text: botResponseText }
+                  : msg
+              )
+            );
+          }
+        } catch (error) {
+          console.error('Error parsing streaming data:', error);
+        }
       };
-      
-      eventSource.onerror = () => {
-        eventSource.close();
-        setIsLoading(false);
-      };
-      
-      eventSource.addEventListener('complete', () => {
-        eventSource.close();
-        setIsLoading(false);
+
+      eventSource.addEventListener('complete', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.completed) {
+            eventSource.close();
+            setIsLoading(false);
+            
+            // Auto-scroll to bottom after message is complete
+            setTimeout(() => {
+              if (chatContainerRef.current) {
+                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+              }
+            }, 100);
+          }
+        } catch (error) {
+          console.error('Error parsing completion event:', error);
+          eventSource.close();
+          setIsLoading(false);
+        }
       });
-      
+
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        setIsLoading(false);
+        
+        // Update with error message if no response was received
+        if (botResponseText === "") {
+          setMessages(prevMessages =>
+            prevMessages.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, text: "Sorry, I'm having trouble connecting to the server. Please try again later." }
+                : msg
+            )
+          );
+        }
+      };
+
+      // Cleanup function to close EventSource if component unmounts
+      return () => {
+        eventSource.close();
+      };
+
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error setting up streaming:', error);
       setIsLoading(false);
       setMessages(prev => [...prev, { 
         text: "Sorry, I'm having trouble connecting to the server. Please try again later.", 
