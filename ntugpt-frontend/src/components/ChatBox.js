@@ -217,6 +217,7 @@ const ChatBox = ({ theme }) => {
           display: "flex",
           flexDirection: "column",
           padding: { xs: "8px", md: "12px" },
+          paddingBottom: { xs: '80px', md: '100px' }, // or slightly more
         }}
       >
         {messages.length === 0 ? (
@@ -254,8 +255,12 @@ const ChatBox = ({ theme }) => {
           width: '100%',
           maxWidth: '100%',
           position: 'sticky',
-          bottom: 0,
-          zIndex: 10,
+          position: 'fixed',
+          bottom: { xs: '12px', md: '20px' },
+          left: 0,
+          right: 0,
+          paddingLeft: { xs: '12px', md: '24px' },
+          paddingRight: { xs: '12px', md: '24px' },
         }}
       >
         <TextField
