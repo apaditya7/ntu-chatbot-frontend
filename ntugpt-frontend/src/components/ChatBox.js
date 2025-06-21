@@ -17,6 +17,13 @@ const ChatBox = ({ theme }) => {
   const chatContainerRef = useRef(null);
   const textFieldRef = useRef(null);
 
+  // Auto-scroll to bottom function
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
   const sendMessage = async (text) => {
     if (!text.trim()) return;
 
@@ -29,6 +36,9 @@ const ChatBox = ({ theme }) => {
     
     setInput("");
     setIsLoading(true);
+
+    // Scroll to bottom when user sends a message
+    setTimeout(scrollToBottom, 100);
 
     try {
       const botMessageId = Date.now();
@@ -252,15 +262,14 @@ const ChatBox = ({ theme }) => {
             boxShadow: `0 4px 24px rgba(59, 130, 246, 0.3)`,
           },
           height: { xs: '48px', md: '52px' },
-          width: '100%',
-          maxWidth: '100%',
-          position: 'sticky',
+          width: { xs: 'calc(100% - 24px)', md: '100%' },
+          maxWidth: { xs: 'none', md: '900px' },
           position: 'fixed',
           bottom: { xs: '12px', md: '20px' },
-          left: 0,
-          right: 0,
-          paddingLeft: { xs: '12px', md: '24px' },
-          paddingRight: { xs: '12px', md: '24px' },
+          left: { xs: '12px', md: '50%' },
+          right: { xs: '12px', md: 'auto' },
+          transform: { xs: 'none', md: 'translateX(-50%)' },
+          mx: { xs: 0, md: 'auto' },
         }}
       >
         <TextField
